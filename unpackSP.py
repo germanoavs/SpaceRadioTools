@@ -1,12 +1,16 @@
 # !/usr/bin/python3
 
+# Author: Germano Sobroza
+# email: germanoavs@gmail.com; germano@ita.br
+
+from gc import garbage
 from numpy import fromfile
 import argparse
 
 
 class Unpacker(object):
 	def __init__(self):
-		self.telemtrys = None
+		self.telemetry = None
 
 	def unpackAX25(self, ax25pkt):
 		frameIndex = 0
@@ -54,7 +58,19 @@ class Unpacker(object):
 			payload.append(hex(ax25pkt[frameIndex] & 0xFF))
 			frameIndex += 1
 
-		return payload
+		# Dict
+
+		unpackedAX25 = {
+			'SOURCE' : src,
+			'SSSID' : srcSSID,
+			'DESTINATION' : dst,
+			'DSSID' : dstSSID,
+			'PID' : pid,
+			'CONTROL' : control,
+			'PAYLOAD' : payload
+		}
+
+		return payload, unpackedAX25
 
 	def unpackSP(self, sp):
 		# this function receives a space packet in 'bytes' format and returns dict with all fields  
@@ -78,7 +94,7 @@ class Unpacker(object):
 		# get Sec HDR Flag
 		secHDRflag = ((pkt_primary_header[0] & 0x0F) & (0xFF << 3))>>3	
 
-		# get Versin No
+		# get Version No
 		versN = (((pkt_primary_header[0])) & (0xFF << 5)) >> 5
 
 		#get pkt type
@@ -124,7 +140,7 @@ class Unpacker(object):
 
 	def unpack_AX25_SP(self,ax25pkt):
 
-		sp_ = self.unpackAX25(ax25pkt)			# unpack ax25
+		sp_, garbage = self.unpackAX25(ax25pkt)			# unpack ax25
 		sp_ = bytes([int(x,0) for x in sp_])	# transform list of hex in bytes
 		spDict = self.unpackSP(sp_)		# get only data field
 		return spDict
@@ -134,9 +150,12 @@ class Unpacker(object):
 if __name__ == '__main__':
 	# arguments and commands definition
 	parser = argparse.ArgumentParser('Unpack Space Packets.')
-	group = parser.add_mutually_exclusive_group()
-	group.add_argument('-bf', action='store_true', help = 'Activate binary data input, otherwise it a txt file with HEX')
-	group.add_argument('-s', action='store_true', help = 'Activate string input with hex values')
+	groupInput = parser.add_mutually_exclusive_group()
+	groupInput.add_argument('-b', action='store_true', help = 'Activate binary data input, otherwise it a txt file with HEX')
+	groupInput.add_argument('-s', action='store_true', help = 'Activate string input with hex values, otherwise its a txt file with HEX')
+	groupWorker = parser.add_mutually_exclusive_group()
+	groupWorker.add_argument('-a', action='store_true', help = 'AX25 unpacking mode, otherwise ax25+SP unpacking.')
+	groupWorker.add_argument('-sp', action='store_true', help = 'Space Packet unpacking mode, otherwise ax25+SP unpacking.')
 	parser.add_argument('file_path', type=str, help='file path of binary data or hex txt')
 
 	# take arguments
@@ -145,7 +164,7 @@ if __name__ == '__main__':
 
 	# INPUT TYPES
 	# if binary file mode is active, opens file 
-	if args.bf:
+	if args.b:
 		ax25_or_SP_pkt = fromfile(args.file_path, dtype='uint8')
 
 	elif args.s:	# if input is a string with hex values
@@ -157,9 +176,19 @@ if __name__ == '__main__':
 			ax25_or_SP_pkt = bytearray.fromhex(msg_str) 
 			f.close()
 
+	# WHAT TO DO 
+
 
 	# TODO: new commands for only ax25 unpacking, only sp unpacking and both
-
-
 	myUnpacker = Unpacker()
-	print(myUnpacker.unpack_AX25_SP(ax25_or_SP_pkt))
+
+	if args.a:
+		payload, dict = (myUnpacker.unpackAX25(ax25_or_SP_pkt))
+	elif args.sp:
+		dict = myUnpacker.unpackSP(ax25_or_SP_pkt)
+
+	else:
+		dict = myUnpacker.unpack_AX25_SP(ax25_or_SP_pkt)
+
+
+	print(dict)
