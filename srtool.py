@@ -2,6 +2,7 @@
 
 # Author: Germano Sobroza
 # email: germanoavs@gmail.com; germano@ita.br
+# Feel free to use it
 
 from gc import garbage
 from numpy import fromfile
