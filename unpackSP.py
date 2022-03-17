@@ -1,3 +1,5 @@
+# !/usr/bin/python3
+
 from numpy import fromfile
 import argparse
 
@@ -140,20 +142,22 @@ if __name__ == '__main__':
 	# take arguments
 	args = parser.parse_args()
 
+
+	# INPUT TYPES
 	# if binary file mode is active, opens file 
 	if args.bf:
 		ax25_or_SP_pkt = fromfile(args.file_path, dtype='uint8')
 
-	elif args.s:	# if input is a txt with hex values
+	elif args.s:	# if input is a string with hex values
 		ax25_or_SP_pkt = bytearray.fromhex(args.file_path)
 	else:
 		# Open command file
 		with open(args.file_path, 'r') as f:
 			msg_str = f.readline()
-			ax25_or_SP_pkt = bytearray.fromhex(msg_str)
+			ax25_or_SP_pkt = bytearray.fromhex(msg_str) 
 			f.close()
 
-	# TODO: test string and file txt
+
 	# TODO: new commands for only ax25 unpacking, only sp unpacking and both
 
 
